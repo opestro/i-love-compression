@@ -1,0 +1,7 @@
+engine/target/
+macos/.build/
+windows/**/bin/
+windows/**/obj/
+vendor/
+build/
+.DS_Store

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF5A7A"/>
+      <stop offset="1" stop-color="#C2185B"/>
+    </linearGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#bg)"/>
+  <!-- heart -->
+  <path d="M512 770 C 330 640 250 540 250 430 C 250 345 315 285 395 285 C 448 285 490 312 512 352 C 534 312 576 285 629 285 C 709 285 774 345 774 430 C 774 540 694 640 512 770 Z" fill="#fff"/>
+  <!-- squeeze arrows -->
+  <g fill="none" stroke="#C2185B" stroke-width="40" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M372 470 H452 M420 430 l40 40 -40 40"/>
+    <path d="M652 470 H572 M604 430 l-40 40 40 40"/>
+  </g>
+</svg>

@@ -1,0 +1,22 @@
+[package]
+name = "ilc-engine"
+version = "1.0.0"
+description = "Compression engine behind the I Love Compression apps"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif", "bmp", "tiff", "ico"] }
+# ponytail: no SIMD so Windows CI needs no nasm; JPEG encodes stay well under a second.
+mozjpeg = { version = "0.10", default-features = false }
+oxipng = { version = "10", default-features = false, features = ["parallel"] }
+imagequant = "4"
+rgb = "0.8" # pixel type shared by imagequant and oxipng
+webp = "0.3"
+ravif = "0.13"
+img-parts = "0.4"
+
+[profile.release]
+strip = true
+lto = "thin"
