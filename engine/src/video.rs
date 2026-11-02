@@ -117,20 +117,33 @@ pub fn parse_progress(line: &str) -> Option<f64> {
     line.strip_prefix("out_time_us=")?.trim().parse::<i64>().ok().map(|us| us.max(0) as f64 / 1e6)
 }
 
-/// ffprobe "-of default=nw=1" output -> (duration seconds, audio channels).
-pub fn parse_ffprobe(text: &str) -> (f64, u32) {
-    let field = |key: &str| text.lines().find_map(|l| l.strip_prefix(key)).map(str::trim);
-    let duration = field("duration=").and_then(|v| v.parse().ok()).unwrap_or(0.0);
-    let channels = field("channels=").and_then(|v| v.parse().ok()).unwrap_or(0);
+/// What `ffmpeg -i` prints about the input -> (duration seconds, first audio stream's channels:
+/// 0 = no audio, 1 mono, 2 stereo, 6 = any other layout). Saves shipping ffprobe (165 MB).
+pub fn parse_input_info(text: &str) -> (f64, u32) {
+    let duration = text
+        .lines()
+        .find_map(|l| l.trim().strip_prefix("Duration: "))
+        .and_then(|rest| {
+            let parts: Vec<f64> = rest.split(',').next()?.split(':').filter_map(|p| p.trim().parse().ok()).collect();
+            (parts.len() == 3).then(|| parts[0] * 3600.0 + parts[1] * 60.0 + parts[2])
+        })
+        .unwrap_or(0.0);
+    let channels = text.lines().find(|l| l.contains("Stream #") && l.contains("Audio:")).map_or(0, |l| {
+        if l.contains(", mono") {
+            1
+        } else if l.contains(", stereo") {
+            2
+        } else {
+            6
+        }
+    });
     (duration, channels)
 }
 
-fn media_info(ffprobe: &Path, input: &Path) -> (f64, u32) {
-    let out = command(ffprobe)
-        .args(["-v", "error", "-select_streams", "a:0", "-show_entries", "stream=channels:format=duration", "-of", "default=nw=1"])
-        .arg(input)
-        .output();
-    out.map(|o| parse_ffprobe(&String::from_utf8_lossy(&o.stdout))).unwrap_or((0.0, 0))
+fn media_info(ffmpeg: &Path, input: &Path) -> (f64, u32) {
+    // With no output file ffmpeg exits with an error after describing the input; that's fine.
+    let out = command(ffmpeg).args(["-hide_banner", "-nostdin", "-i"]).arg(input).output();
+    out.map(|o| parse_input_info(&String::from_utf8_lossy(&o.stderr))).unwrap_or((0.0, 0))
 }
 
 pub fn probe(ffmpeg: &Path) -> Hardware {
@@ -153,14 +166,14 @@ pub fn probe(ffmpeg: &Path) -> Hardware {
 }
 
 /// Compresses one video, emitting progress; `cancelled` flips when the app closes stdin.
-pub fn run(input: &Path, codec: Codec, engine: Engine, ffmpeg: &Path, ffprobe: &Path, cancel: &crate::Cancel) -> Event {
+pub fn run(input: &Path, codec: Codec, engine: Engine, ffmpeg: &Path, cancel: &crate::Cancel) -> Event {
     let output = output_path(input, codec);
     let before = crate::size(input);
     if output.exists() {
         return Event::done(&output, before, crate::size(&output), "Already compressed");
     }
     let hw = probe_audio_only(ffmpeg);
-    let (duration, channels) = media_info(ffprobe, input);
+    let (duration, channels) = media_info(ffmpeg, input);
     let spawned = command(ffmpeg)
         .args(args(input, &output, codec, engine, &hw, channels))
         .stdin(Stdio::null())
@@ -261,8 +274,11 @@ mod tests {
         assert_eq!(parse_progress("out_time_us=1500000"), Some(1.5));
         assert_eq!(parse_progress("out_time_us=N/A"), None);
         assert_eq!(parse_progress("frame=12"), None);
-        assert_eq!(parse_ffprobe("channels=2\nduration=1119.551995\n"), (1119.551995, 2));
-        assert_eq!(parse_ffprobe("duration=10.0\n"), (10.0, 0));
+        let lecture = "Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'exo2-1-.mp4':\n  Duration: 00:18:39.55, start: 0.000000, bitrate: 5038 kb/s\n  Stream #0:0[0x1](und): Video: hevc (Main) (hvc1 / 0x31637668), yuv420p(tv, bt709), 1730x1080, 4834 kb/s, 30 fps\n  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, stereo, fltp, 197 kb/s (default)\n";
+        assert_eq!(parse_input_info(lecture), (1119.55, 2));
+        assert_eq!(parse_input_info("  Duration: 00:00:02.00, start: 0\n  Stream #0:1: Audio: opus, 48000 Hz, mono, fltp\n"), (2.0, 1));
+        assert_eq!(parse_input_info("  Duration: 00:01:00.00, bitrate: 1 kb/s\n  Stream #0:1: Audio: ac3, 48000 Hz, 5.1(side), fltp\n").1, 6);
+        assert_eq!(parse_input_info("  Duration: N/A, bitrate: N/A\n  Stream #0:0: Video: h264\n"), (0.0, 0));
         assert_eq!(output_path(Path::new("/a/exo 2.mp4"), Codec::Hevc), PathBuf::from("/a/exo 2.hevc.mp4"));
     }
 }

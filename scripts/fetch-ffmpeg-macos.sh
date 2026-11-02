@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Downloads static Apple Silicon ffmpeg + ffprobe (ffmpeg.martin-riedl.de, signed) into
+# Downloads static Apple Silicon ffmpeg (ffmpeg.martin-riedl.de, signed) into
 # vendor/ffmpeg/, for `FFMPEG_DIR=vendor/ffmpeg macos/build.sh`. Used by CI.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 dest=vendor/ffmpeg
 mkdir -p "$dest"
 tmp=$(mktemp -d)
-for tool in ffmpeg ffprobe; do
+for tool in ffmpeg; do
   curl -fsSL -o "$tmp/$tool.zip" "https://ffmpeg.martin-riedl.de/redirect/latest/macos/arm64/release/$tool.zip"
   unzip -o -q "$tmp/$tool.zip" -d "$tmp/$tool"
   install -m 755 "$tmp/$tool/$tool" "$dest/$tool"

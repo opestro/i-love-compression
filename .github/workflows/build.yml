@@ -54,7 +54,7 @@ jobs:
           Expand-Archive ffmpeg.zip -DestinationPath ffmpeg-dl
           $bin = (Get-ChildItem ffmpeg-dl -Recurse -Filter ffmpeg.exe | Select-Object -First 1).DirectoryName
           New-Item -ItemType Directory -Force vendor/ffmpeg | Out-Null
-          Copy-Item "$bin/ffmpeg.exe", "$bin/ffprobe.exe" vendor/ffmpeg/
+          Copy-Item "$bin/ffmpeg.exe" vendor/ffmpeg/
           $enc = & vendor/ffmpeg/ffmpeg.exe -hide_banner -encoders | Out-String
           foreach ($need in 'libx265', 'libsvtav1', 'libopus', 'hevc_nvenc', 'av1_nvenc') {
             if ($enc -notmatch " $need ") { throw "ffmpeg build lacks $need" }
@@ -70,8 +70,8 @@ jobs:
         run: |
           cargo build --release --manifest-path engine/Cargo.toml
           dotnet publish windows/ILoveCompression/ILoveCompression.csproj -c Release -r win-x64 --self-contained `
-            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "build/I Love Compression"
-          Copy-Item engine/target/release/ilc-engine.exe, vendor/ffmpeg/ffmpeg.exe, vendor/ffmpeg/ffprobe.exe "build/I Love Compression/"
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o "build/I Love Compression"
+          Copy-Item engine/target/release/ilc-engine.exe, vendor/ffmpeg/ffmpeg.exe "build/I Love Compression/"
           Get-ChildItem "build/I Love Compression" | Format-Table Name, Length
 
       - uses: actions/upload-artifact@v4

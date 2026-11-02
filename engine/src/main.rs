@@ -115,7 +115,7 @@ pub fn size(path: &Path) -> u64 {
     std::fs::metadata(path).map(|m| m.len()).unwrap_or(0)
 }
 
-/// ffmpeg/ffprobe shipped next to this executable; falls back to PATH for development.
+/// ffmpeg shipped next to this executable; falls back to PATH for development.
 fn sidecar(name: &str) -> PathBuf {
     let file = if cfg!(windows) { format!("{name}.exe") } else { name.to_string() };
     std::env::current_exe()
@@ -158,7 +158,7 @@ fn main() {
             let Some(input) = inputs.first() else { usage() };
             let codec = if flag("--codec") == Some("av1") { video::Codec::Av1 } else { video::Codec::Hevc };
             let engine = if flag("--engine") == Some("gpu") { video::Engine::Gpu } else { video::Engine::Cpu };
-            let event = video::run(input, codec, engine, &sidecar("ffmpeg"), &sidecar("ffprobe"), Cancel::watch_stdin());
+            let event = video::run(input, codec, engine, &sidecar("ffmpeg"), Cancel::watch_stdin());
             let ok = matches!(event, Event::Done { .. });
             event.emit();
             ok
