@@ -30,6 +30,8 @@ public partial class MainWindow : Window
     ];
 
     private readonly ObservableCollection<Job> _jobs = [];
+    // Started at launch, awaited only by video jobs: NVENC test encodes take a couple of seconds.
+    private readonly Task<Hardware> _probe = EngineRun.ProbeAsync();
     private Hardware _hardware = new();
     private bool _isVideo;
     private bool _running;
@@ -53,8 +55,7 @@ public partial class MainWindow : Window
     /// Command line: ILoveCompression.exe [--compress] [--mode video|image] file…
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
-        _hardware = await EngineRun.ProbeAsync();
-        UpdateVideoHints();
+        _ = _probe.ContinueWith(t => { _hardware = t.Result; UpdateVideoHints(); }, TaskScheduler.FromCurrentSynchronizationContext());
         var args = Environment.GetCommandLineArgs().Skip(1).ToList();
         var modeIndex = args.IndexOf("--mode");
         if (modeIndex >= 0 && modeIndex + 1 < args.Count) ShowMode(args[modeIndex + 1] == "video");
@@ -63,7 +64,7 @@ public partial class MainWindow : Window
         {
             ShowMode(IsVideoFile(files[0]));
             Add(files);
-            if (args.Contains("--compress")) Start();
+            if (args.Contains("--compress")) await StartAsync();
         }
     }
 
@@ -149,15 +150,23 @@ public partial class MainWindow : Window
 
     // ---- running
 
-    private void OnCompress(object sender, RoutedEventArgs e)
+    private async void OnCompress(object sender, RoutedEventArgs e)
     {
         if (_running) { _stopping = true; _current?.Stop(); }
-        else Start();
+        else await StartAsync();
     }
 
-    private void Start()
+    private async Task StartAsync()
     {
         if (_running || !_jobs.Any(j => j.Status == JobStatus.Waiting)) return;
+        _running = true; // locks the options while a video waits for the GPU check
+        Refresh();
+        if (_isVideo)
+        {
+            _hardware = await _probe;
+            UpdateVideoHints();
+        }
+        _running = false;
         _stopping = false;
         if (_isVideo) RunNextVideo(); else RunImages();
     }
@@ -240,7 +249,7 @@ public partial class MainWindow : Window
         HomeButton.IsEnabled = !_running;
         ClearButton.IsEnabled = !_running;
         var waiting = _jobs.Count(j => j.Status == JobStatus.Waiting);
-        CompressButton.Content = _running ? "Stop" : waiting == 1 ? "Compress 1 File" : $"Compress {waiting} Files";
+        CompressButton.Content = _running ? "Stop" : waiting switch { 0 => "Compress", 1 => "Compress 1 File", _ => $"Compress {waiting} Files" };
         CompressButton.IsEnabled = _running || waiting > 0;
         var saved = _jobs.Where(j => j.Status == JobStatus.Done).Sum(j => Math.Max(0, j.Before - j.After));
         SavedLabel.Text = saved > 0 ? $"♥ Saved {Job.Bytes(saved)}" : "";

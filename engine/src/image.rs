@@ -56,6 +56,10 @@ pub struct Options {
 }
 
 pub fn compress(input: &Path, index: usize, opts: &Options) -> Event {
+    if is_own_output(input) {
+        let size = crate::size(input);
+        return Event::done(input, size, size, "Already a compressed copy, skipped").with_index(index);
+    }
     match try_compress(input, index, opts) {
         Ok((output, before, after)) => {
             let note = if after > before { "Bigger than the original" } else { "" };
@@ -262,6 +266,17 @@ pub fn output_name(pattern: &str, original: &str, number: u32, date: &str, width
     if clean.trim().is_empty() { original.to_string() } else { clean }
 }
 
+/// photo-compressed.webp / "photo-compressed (2).webp": made with the default name pattern,
+/// e.g. picked up again by dropping a whole folder. Custom patterns can't be recognised.
+pub fn is_own_output(input: &Path) -> bool {
+    let stem = input.file_stem().unwrap_or_default().to_string_lossy();
+    let base = match stem.rsplit_once(" (") {
+        Some((base, n)) if n.len() > 1 && n.ends_with(')') && n[..n.len() - 1].bytes().all(|b| b.is_ascii_digit()) => base,
+        _ => &stem,
+    };
+    base.ends_with("-compressed")
+}
+
 /// Never overwrites anything, least of all the original: adds " (2)", " (3)", ... when taken.
 pub fn unique_path(dir: &Path, name: &str, ext: &str, input: &Path) -> PathBuf {
     let mut path = dir.join(format!("{name}.{ext}"));
@@ -306,6 +321,8 @@ mod tests {
         assert_eq!(output_name("trip_{number}_{width}x{height}_{date}", "x", 7, "20261102", 1920, 1080), "trip_007_1920x1080_20261102");
         assert_eq!(output_name("a/b:c", "x", 1, "d", 1, 1), "a_b_c");
         assert_eq!(output_name("  ", "orig", 1, "d", 1, 1), "orig");
+        assert!(is_own_output(Path::new("/a/f1-compressed.webp")) && is_own_output(Path::new("/a/f1-compressed (12).png")));
+        assert!(!is_own_output(Path::new("/a/f1.png")) && !is_own_output(Path::new("/a/f1-compressed (x).png")));
         assert_eq!(civil_from_days(0), (1970, 1, 1));
         assert_eq!(civil_from_days(20_759), (2026, 11, 2));
     }

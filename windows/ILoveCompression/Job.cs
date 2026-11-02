@@ -85,6 +85,9 @@ public sealed class Job : INotifyPropertyChanged
         _ => $"{Math.Max(1, n / 1000)} KB",
     };
 
+    /// What screen readers announce for the row (ListView uses the item's ToString()).
+    public override string ToString() => $"{Name}, {Detail}";
+
     public event PropertyChangedEventHandler? PropertyChanged;
     private void Changed() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
 }

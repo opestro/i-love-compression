@@ -35,7 +35,7 @@ struct HomeView: View {
                 ModeCard(symbol: "film.stack", title: "Video", detail: "Lecture videos up to 20× smaller",
                          formats: "MP4 · MOV · MKV · AVI · WebM") { model.mode = .video }
                 ModeCard(symbol: "photo.on.rectangle.angled", title: "Image", detail: "Photos and graphics 70–90% smaller",
-                         formats: "JPEG · PNG · WebP · AVIF · ICO") { model.mode = .image }
+                         formats: "JPEG · PNG · WebP · GIF · BMP · TIFF") { model.mode = .image }
             }
             Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev")")
                 .font(.caption)
@@ -158,7 +158,7 @@ struct ModeView: View {
                     .controlSize(.large)
             } else {
                 Button { model.start() } label: {
-                    Text(model.waitingCount == 1 ? "Compress 1 File" : "Compress \(model.waitingCount) Files").frame(minWidth: 130)
+                    Text(model.waitingCount == 0 ? "Compress" : model.waitingCount == 1 ? "Compress 1 File" : "Compress \(model.waitingCount) Files").frame(minWidth: 130)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)

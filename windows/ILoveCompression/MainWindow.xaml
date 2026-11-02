@@ -13,7 +13,7 @@
         </Style>
         <Style x:Key="Section" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="0,18,0,6" />
+            <Setter Property="Margin" Value="0,14,0,4" />
         </Style>
     </Window.Resources>
 
@@ -38,7 +38,7 @@
                             <TextBlock Text="&#xE91B;" FontFamily="{StaticResource Icons}" FontSize="44" HorizontalAlignment="Center" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
                             <TextBlock Text="Image" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,4" />
                             <TextBlock Text="Photos and graphics 70–90% smaller" Opacity="0.75" HorizontalAlignment="Center" />
-                            <TextBlock Text="JPEG · PNG · WebP · AVIF · ICO" FontSize="12" Opacity="0.55" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                            <TextBlock Text="JPEG · PNG · WebP · GIF · BMP · TIFF" FontSize="12" Opacity="0.55" HorizontalAlignment="Center" Margin="0,6,0,0" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -59,13 +59,13 @@
             </Grid.RowDefinitions>
 
             <DockPanel Grid.ColumnSpan="2" Margin="12,10,12,6">
-                <Button x:Name="HomeButton" Click="OnHome" Padding="10,4" ToolTip="Back to choosing video or image">
+                <Button x:Name="HomeButton" Click="OnHome" Padding="10,4" ToolTip="Back to choosing video or image" AutomationProperties.Name="Home">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE72B;" FontFamily="{StaticResource Icons}" VerticalAlignment="Center" Margin="0,0,6,0" />
                         <TextBlock Text="Home" />
                     </StackPanel>
                 </Button>
-                <Button DockPanel.Dock="Right" Click="OnAddFiles" Padding="10,4">
+                <Button DockPanel.Dock="Right" Click="OnAddFiles" Padding="10,4" AutomationProperties.Name="Add Files">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE710;" FontFamily="{StaticResource Icons}" VerticalAlignment="Center" Margin="0,0,6,0" />
                         <TextBlock Text="Add Files" />

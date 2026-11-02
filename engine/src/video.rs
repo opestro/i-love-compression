@@ -152,7 +152,8 @@ pub fn probe(ffmpeg: &Path) -> Hardware {
         .output()
         .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
         .unwrap_or_default();
-    // NVENC encoders are listed even without an NVIDIA GPU (or with a too-old driver), so try one frame.
+    // NVENC encoders are listed even without an NVIDIA GPU (or with a too-old driver), so try one
+    // frame. Both at once: each NVENC start-up takes ~1.5 s (3.9 s in a row on an RTX 3060 Ti).
     let works = |enc: &str| {
         encoders.contains(enc)
             && command(ffmpeg)
@@ -162,13 +163,26 @@ pub fn probe(ffmpeg: &Path) -> Hardware {
                 .status()
                 .is_ok_and(|s| s.success())
     };
-    Hardware { nvenc_hevc: works("hevc_nvenc"), nvenc_av1: works("av1_nvenc"), aac_at: encoders.contains("aac_at") }
+    let (nvenc_hevc, nvenc_av1) = std::thread::scope(|s| {
+        let av1 = s.spawn(|| works("av1_nvenc"));
+        (works("hevc_nvenc"), av1.join().unwrap_or(false))
+    });
+    Hardware { nvenc_hevc, nvenc_av1, aac_at: encoders.contains("aac_at") }
+}
+
+/// name.hevc.mp4 / name.av1.mp4: one of our own outputs, e.g. from dropping a whole folder.
+pub fn is_own_output(input: &Path) -> bool {
+    let name = input.file_name().unwrap_or_default().to_string_lossy().to_ascii_lowercase();
+    name.ends_with(".hevc.mp4") || name.ends_with(".av1.mp4")
 }
 
 /// Compresses one video, emitting progress; `cancelled` flips when the app closes stdin.
 pub fn run(input: &Path, codec: Codec, engine: Engine, ffmpeg: &Path, cancel: &crate::Cancel) -> Event {
     let output = output_path(input, codec);
     let before = crate::size(input);
+    if is_own_output(input) {
+        return Event::done(input, before, before, "Already a compressed copy, skipped");
+    }
     if output.exists() {
         return Event::done(&output, before, crate::size(&output), "Already compressed");
     }
@@ -280,5 +294,7 @@ mod tests {
         assert_eq!(parse_input_info("  Duration: 00:01:00.00, bitrate: 1 kb/s\n  Stream #0:1: Audio: ac3, 48000 Hz, 5.1(side), fltp\n").1, 6);
         assert_eq!(parse_input_info("  Duration: N/A, bitrate: N/A\n  Stream #0:0: Video: h264\n"), (0.0, 0));
         assert_eq!(output_path(Path::new("/a/exo 2.mp4"), Codec::Hevc), PathBuf::from("/a/exo 2.hevc.mp4"));
+        assert!(is_own_output(Path::new("/a/exo.hevc.mp4")) && is_own_output(Path::new("/a/EXO.AV1.MP4")));
+        assert!(!is_own_output(Path::new("/a/exo.mp4")) && !is_own_output(Path::new("/a/hevc.mp4")));
     }
 }
