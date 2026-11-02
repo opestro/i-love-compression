@@ -1,0 +1,190 @@
+<Window x:Class="ILoveCompression.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="I Love Compression" Width="1040" Height="700" MinWidth="880" MinHeight="600"
+        WindowStartupLocation="CenterScreen" AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop">
+    <Window.Resources>
+        <FontFamily x:Key="Icons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+        <Style x:Key="Caption" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Opacity" Value="0.7" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+        <Style x:Key="Section" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,18,0,6" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <!-- Home: choose video or image -->
+        <Grid x:Name="HomeView">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Image Source="icon-256.png" Width="88" Height="88" />
+                <TextBlock Text="I Love Compression" FontSize="34" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,14,0,4" />
+                <TextBlock Text="What do you want to compress?" FontSize="17" Opacity="0.7" HorizontalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Margin="0,30,0,0">
+                    <Button Click="OnChooseVideo" Width="260" Height="220" Margin="10" Padding="16" AutomationProperties.Name="Compress videos">
+                        <StackPanel>
+                            <TextBlock Text="&#xE714;" FontFamily="{StaticResource Icons}" FontSize="44" HorizontalAlignment="Center" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="Video" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,4" />
+                            <TextBlock Text="Lecture videos up to 20× smaller" Opacity="0.75" HorizontalAlignment="Center" />
+                            <TextBlock Text="MP4 · MOV · MKV · AVI · WebM" FontSize="12" Opacity="0.55" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                        </StackPanel>
+                    </Button>
+                    <Button Click="OnChooseImage" Width="260" Height="220" Margin="10" Padding="16" AutomationProperties.Name="Compress images">
+                        <StackPanel>
+                            <TextBlock Text="&#xE91B;" FontFamily="{StaticResource Icons}" FontSize="44" HorizontalAlignment="Center" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="Image" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,4" />
+                            <TextBlock Text="Photos and graphics 70–90% smaller" Opacity="0.75" HorizontalAlignment="Center" />
+                            <TextBlock Text="JPEG · PNG · WebP · AVIF · ICO" FontSize="12" Opacity="0.55" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- Mode: options on the left, files on the right -->
+        <Grid x:Name="ModeView" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="340" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.ColumnSpan="2" Margin="12,10,12,6">
+                <Button x:Name="HomeButton" Click="OnHome" Padding="10,4" ToolTip="Back to choosing video or image">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE72B;" FontFamily="{StaticResource Icons}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBlock Text="Home" />
+                    </StackPanel>
+                </Button>
+                <Button DockPanel.Dock="Right" Click="OnAddFiles" Padding="10,4">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE710;" FontFamily="{StaticResource Icons}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBlock Text="Add Files" />
+                    </StackPanel>
+                </Button>
+                <TextBlock x:Name="ModeTitle" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" Margin="16,0" />
+            </DockPanel>
+
+            <ScrollViewer x:Name="OptionsPane" Grid.Row="1" Grid.RowSpan="2" VerticalScrollBarVisibility="Auto" Padding="18,0,18,18">
+                <StackPanel>
+                    <!-- Video options -->
+                    <StackPanel x:Name="VideoOptions">
+                        <TextBlock Text="Format" Style="{StaticResource Section}" />
+                        <RadioButton x:Name="CodecHevc" Content="HEVC · plays everywhere" GroupName="codec" IsChecked="True" Checked="OnVideoOptionChanged" />
+                        <RadioButton x:Name="CodecAv1" Content="AV1 · smallest" GroupName="codec" Checked="OnVideoOptionChanged" Margin="0,6,0,0" />
+                        <TextBlock x:Name="CodecHint" Style="{StaticResource Caption}" />
+                        <StackPanel x:Name="EnginePanel" Visibility="Collapsed">
+                            <TextBlock Text="Encoder" Style="{StaticResource Section}" />
+                            <RadioButton x:Name="EngineGpu" Content="GPU · fastest" GroupName="engine" IsChecked="True" Checked="OnVideoOptionChanged" />
+                            <RadioButton x:Name="EngineCpu" Content="CPU · best quality" GroupName="engine" Checked="OnVideoOptionChanged" Margin="0,6,0,0" />
+                            <TextBlock x:Name="EngineHint" Style="{StaticResource Caption}" />
+                        </StackPanel>
+                        <TextBlock Text="Tuned for lectures" Style="{StaticResource Section}" />
+                        <TextBlock Style="{StaticResource Caption}" Text="15 fps: handwriting and the webcam look normal. Mono speech audio at the original loudness. Hardware decoding." />
+                        <TextBlock Style="{StaticResource Caption}" Margin="0,12,0,0" Text="Compressed copies are saved next to the originals as name.hevc.mp4 or name.av1.mp4." />
+                    </StackPanel>
+
+                    <!-- Image options -->
+                    <StackPanel x:Name="ImageOptions">
+                        <TextBlock Text="Preset" Style="{StaticResource Section}" />
+                        <ComboBox x:Name="PresetBox" SelectionChanged="OnPresetChanged" />
+                        <TextBlock Text="Output" Style="{StaticResource Section}" />
+                        <ComboBox x:Name="FormatBox" SelectionChanged="OnImageOptionChanged" />
+                        <DockPanel x:Name="QualityRow" Margin="0,10,0,0">
+                            <TextBlock Text="Quality" VerticalAlignment="Center" Width="60" />
+                            <TextBlock x:Name="QualityValue" DockPanel.Dock="Right" Width="30" TextAlignment="Right" VerticalAlignment="Center" />
+                            <Slider x:Name="QualitySlider" Minimum="1" Maximum="100" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="OnQualityChanged" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <TextBlock x:Name="FormatHint" Style="{StaticResource Caption}" />
+
+                        <TextBlock Text="Resize" Style="{StaticResource Section}" />
+                        <CheckBox x:Name="ResizeBox" Content="Shrink to fit" Checked="OnImageOptionChanged" Unchecked="OnImageOptionChanged" />
+                        <StackPanel x:Name="ResizePanel" Margin="0,8,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox x:Name="WidthBox" Width="90" TextChanged="OnImageOptionChanged" />
+                                <TextBlock Text="×" VerticalAlignment="Center" Margin="8,0" />
+                                <TextBox x:Name="HeightBox" Width="90" TextChanged="OnImageOptionChanged" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button Content="HD" Tag="1920x1080" Click="OnSizePreset" Padding="10,2" Margin="0,0,6,0" />
+                                <Button Content="4K" Tag="3840x2160" Click="OnSizePreset" Padding="10,2" Margin="0,0,6,0" />
+                                <Button Content="Social" Tag="1200x1200" Click="OnSizePreset" Padding="10,2" />
+                            </StackPanel>
+                            <CheckBox x:Name="AspectBox" Content="Keep aspect ratio" IsChecked="True" Margin="0,8,0,0" Checked="OnImageOptionChanged" Unchecked="OnImageOptionChanged" />
+                            <TextBlock Style="{StaticResource Caption}" Text="Images are only ever made smaller, never enlarged." />
+                        </StackPanel>
+
+                        <TextBlock Text="Details" Style="{StaticResource Section}" />
+                        <CheckBox x:Name="MetadataBox" Content="Keep metadata (EXIF, colour profile)" IsChecked="True" />
+                        <CheckBox x:Name="RenameBox" Content="Rename files" Margin="0,8,0,0" Checked="OnRenameToggled" Unchecked="OnRenameToggled" />
+                        <StackPanel x:Name="RenamePanel" Visibility="Collapsed" Margin="0,8,0,0">
+                            <TextBox x:Name="PatternBox" Text="{}{original_name}-compressed" />
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="Start number" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBox x:Name="StartNumberBox" Text="1" Width="70" />
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource Caption}" FontFamily="Consolas" Text="{}{original_name} {number} {date} {width} {height}" />
+                        </StackPanel>
+
+                        <TextBlock Text="Save to" Style="{StaticResource Section}" />
+                        <TextBlock x:Name="FolderLabel" Text="Next to the originals" TextTrimming="CharacterEllipsis" />
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <Button Content="Choose…" Click="OnChooseFolder" Padding="10,2" Margin="0,0,6,0" />
+                            <Button x:Name="ResetFolderButton" Content="Reset" Click="OnResetFolder" Padding="10,2" Visibility="Collapsed" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Files -->
+            <Grid Grid.Column="1" Grid.Row="1" Margin="0,0,16,0">
+                <Grid x:Name="DropZone" Margin="8">
+                    <Rectangle x:Name="DropOutline" RadiusX="14" RadiusY="14" StrokeThickness="1.5" StrokeDashArray="5 4" Stroke="Gray" Opacity="0.6" />
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock x:Name="DropGlyph" FontFamily="{StaticResource Icons}" FontSize="48" HorizontalAlignment="Center" Opacity="0.6" />
+                        <TextBlock x:Name="DropTitle" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,6" />
+                        <TextBlock Text="Then pick your options on the left and press Compress." Opacity="0.7" HorizontalAlignment="Center" />
+                        <Button Content="Choose Files…" Click="OnAddFiles" HorizontalAlignment="Center" Padding="14,6" Margin="0,14,0,0" />
+                    </StackPanel>
+                </Grid>
+                <ListView x:Name="JobList" Visibility="Collapsed" BorderThickness="0" HorizontalContentAlignment="Stretch">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="4,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="36" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Glyph}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="20" VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                    <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="1" Height="4" Margin="0,6,60,2" Visibility="{Binding ProgressVisibility}" />
+                                    <TextBlock Text="{Binding Detail}" FontSize="12" Opacity="0.75" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Show" Click="OnShow" Tag="{Binding}" Padding="10,2" VerticalAlignment="Center" Visibility="{Binding ShowVisibility}" ToolTip="Show in File Explorer" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+
+            <DockPanel x:Name="BottomBar" Grid.Column="1" Grid.Row="2" Margin="16,8,16,14" Visibility="Collapsed">
+                <TextBlock x:Name="SavedLabel" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="#E91E63" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="ClearButton" Content="Clear Finished" Click="OnClearFinished" Padding="12,6" Margin="0,0,8,0" />
+                    <Button x:Name="CompressButton" Click="OnCompress" Padding="18,6" MinWidth="150" IsDefault="True" FontWeight="SemiBold"
+                            Background="{DynamicResource AccentFillColorDefaultBrush}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                </StackPanel>
+            </DockPanel>
+        </Grid>
+    </Grid>
+</Window>

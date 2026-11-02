@@ -1,0 +1,81 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  macos:
+    runs-on: macos-latest # Apple Silicon
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: engine
+
+      - name: Fetch ffmpeg (static arm64)
+        run: scripts/fetch-ffmpeg-macos.sh
+
+      - name: Engine tests (images, real video encode, cancel)
+        working-directory: engine
+        run: PATH="$PWD/../vendor/ffmpeg:$PATH" cargo test -- --include-ignored
+
+      - name: Build the app and DMG
+        run: FFMPEG_DIR=vendor/ffmpeg macos/build.sh --dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: I-Love-Compression-macOS
+          path: build/I-Love-Compression.dmg
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: engine
+      - uses: ilammy/setup-nasm@v1 # rav1e's x86 assembly (AVIF speed)
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # ffmpeg 8.1 on purpose: BtbN builds 8.0/8.1 against NVENC SDK 13.0 (NVIDIA driver 570+);
+      # master/9.x use SDK 13.1, which refuses to encode on drivers below 610.
+      - name: Fetch ffmpeg (BtbN 8.1 gpl static)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-win64-gpl-8.1.zip' -OutFile ffmpeg.zip
+          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg-dl
+          $bin = (Get-ChildItem ffmpeg-dl -Recurse -Filter ffmpeg.exe | Select-Object -First 1).DirectoryName
+          New-Item -ItemType Directory -Force vendor/ffmpeg | Out-Null
+          Copy-Item "$bin/ffmpeg.exe", "$bin/ffprobe.exe" vendor/ffmpeg/
+          $enc = & vendor/ffmpeg/ffmpeg.exe -hide_banner -encoders | Out-String
+          foreach ($need in 'libx265', 'libsvtav1', 'libopus', 'hevc_nvenc', 'av1_nvenc') {
+            if ($enc -notmatch " $need ") { throw "ffmpeg build lacks $need" }
+          }
+
+      - name: Engine tests (images, real video encode, cancel)
+        shell: bash
+        working-directory: engine
+        run: PATH="$PWD/../vendor/ffmpeg:$PATH" cargo test -- --include-ignored
+
+      - name: Build engine and app
+        shell: pwsh
+        run: |
+          cargo build --release --manifest-path engine/Cargo.toml
+          dotnet publish windows/ILoveCompression/ILoveCompression.csproj -c Release -r win-x64 --self-contained `
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "build/I Love Compression"
+          Copy-Item engine/target/release/ilc-engine.exe, vendor/ffmpeg/ffmpeg.exe, vendor/ffmpeg/ffprobe.exe "build/I Love Compression/"
+          Get-ChildItem "build/I Love Compression" | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: I-Love-Compression-Windows
+          path: build/I Love Compression/
+          if-no-files-found: error
