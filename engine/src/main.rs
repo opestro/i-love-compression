@@ -150,6 +150,10 @@ fn main() {
     let flag = |k: &str| flags.get(k).map(String::as_str);
 
     let ok = match command_name {
+        "--version" => {
+            println!("ilc-engine {}", env!("CARGO_PKG_VERSION"));
+            true
+        }
         "probe" => {
             println!("{}", serde_json::to_string(&video::probe(&sidecar("ffmpeg"))).unwrap());
             true

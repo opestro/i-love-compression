@@ -3,6 +3,7 @@ name: build
 on:
   push:
     branches: [main]
+    tags: ["v*"] # scripts/release.sh pushes these; the release job below publishes them
   pull_request:
   workflow_dispatch:
 
@@ -79,3 +80,52 @@ jobs:
           name: I-Love-Compression-Windows
           path: build/I Love Compression/
           if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # tags and history for the release notes
+
+      - name: Tag must match the version in every app
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          grep -q "^version = \"$v\"" engine/Cargo.toml
+          grep -A1 CFBundleShortVersionString macos/Info.plist | grep -q "<string>$v</string>"
+          grep -q "<Version>$v</Version>" windows/ILoveCompression/ILoveCompression.csproj
+          echo "V=$v" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dl
+
+      - name: Package
+        run: |
+          mkdir out
+          mv dl/I-Love-Compression-macOS/I-Love-Compression.dmg "out/I-Love-Compression-$V-macOS-arm64.dmg"
+          mv dl/I-Love-Compression-Windows "dl/I Love Compression"
+          (cd dl && zip -qr "../out/I-Love-Compression-$V-Windows-x64.zip" "I Love Compression")
+          ls -la out
+
+      - name: Release notes
+        run: |
+          prev=$(git describe --tags --abbrev=0 "$GITHUB_REF_NAME^" 2>/dev/null || true)
+          {
+            echo "## Download"
+            echo "- **macOS** (Apple Silicon): \`I-Love-Compression-$V-macOS-arm64.dmg\`. Not signed yet: open it once, then System Settings → Privacy & Security → **Open Anyway**."
+            echo "- **Windows** (x64): \`I-Love-Compression-$V-Windows-x64.zip\`. Unzip and run \`ILoveCompression.exe\`. On the SmartScreen warning click **More info → Run anyway**. GPU encoding needs an NVIDIA driver 570+."
+            echo
+            echo "## Changes"
+            git log --no-merges --pretty='- %s' ${prev:+$prev..}"$GITHUB_REF_NAME" | grep -v '^- Release v' || true
+          } > notes.md
+          cat notes.md
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" out/* --title "I Love Compression $V" --notes-file notes.md

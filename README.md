@@ -35,9 +35,9 @@ ilc-engine video lecture.mp4 --codec hevc --engine gpu
 
 ## Download
 
-GitHub Actions builds both on every push to `main` (Actions → build → Artifacts):
-- `I-Love-Compression-macOS`: a .dmg (Apple Silicon)
-- `I-Love-Compression-Windows`: a folder; run `ILoveCompression.exe`
+Get the latest version from **[Releases](https://github.com/opestro/i-love-compression/releases/latest)**:
+- **macOS** (Apple Silicon): `I-Love-Compression-X.Y.Z-macOS-arm64.dmg`
+- **Windows** (x64): `I-Love-Compression-X.Y.Z-Windows-x64.zip`, unzip and run `ILoveCompression.exe`
 
 They aren't signed yet:
 - **Mac:** open the app once, then System Settings → Privacy & Security → **Open Anyway**.
@@ -55,7 +55,19 @@ macos/build.sh                                # Mac: build/I Love Compression.ap
 Windows builds run in CI (`.github/workflows/build.yml`). To tune the NVIDIA setting on a
 new GPU, run `scripts/calibrate-nvenc.ps1 -Video lecture.mp4` from the Windows app folder.
 
+## Releasing
+
+Versions follow `MAJOR.MINOR.PATCH`: bump the last number for fixes, the middle one for
+features. One command sets the version in all three parts, tags and pushes:
+
+```bash
+scripts/release.sh 0.1.1
+```
+
+CI then builds both apps and publishes the GitHub release with the downloads and a list of
+the changes since the previous version.
+
 ## License
 
-Bundles FFmpeg built with x265 (GPL) and libimagequant (GPL-3). Fine for internal use; if you
-give the app to others, offer them the source.
+[GPL-3.0](LICENSE). The apps bundle FFmpeg (built with x265, GPL) and link libimagequant
+(GPL-3.0), so the whole project is GPL-3.0.

@@ -46,6 +46,7 @@ public partial class MainWindow : Window
         PresetBox.Items.Add("Custom");
         foreach (var f in Formats) FormatBox.Items.Add(f.Title);
         PresetBox.SelectedIndex = 0;
+        VersionLabel.Text = $"Version {typeof(MainWindow).Assembly.GetName().Version?.ToString(3)}";
         Loaded += OnLoaded;
     }
 

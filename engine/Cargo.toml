@@ -1,6 +1,6 @@
 [package]
 name = "ilc-engine"
-version = "1.0.0"
+version = "0.1.0"
 description = "Compression engine behind the I Love Compression apps"
 edition = "2021"
 

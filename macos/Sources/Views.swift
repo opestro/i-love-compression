@@ -37,6 +37,9 @@ struct HomeView: View {
                 ModeCard(symbol: "photo.on.rectangle.angled", title: "Image", detail: "Photos and graphics 70–90% smaller",
                          formats: "JPEG · PNG · WebP · AVIF · ICO") { model.mode = .image }
             }
+            Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev")")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
