@@ -10,7 +10,7 @@
     <AssemblyName>ILoveCompression</AssemblyName>
     <ApplicationIcon>..\..\assets\AppIcon.ico</ApplicationIcon>
     <Product>I Love Compression</Product>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <!-- ThemeMode (the Windows 11 Fluent look) is still marked experimental in WPF. -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
   </PropertyGroup>
